@@ -1,0 +1,471 @@
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>気象データ解析システム</title>
+<style>
+
+body{
+    font-family:sans-serif;
+    margin:20px;
+}
+
+h2{
+    margin-top:30px;
+}
+
+table{
+    border-collapse:collapse;
+    width:100%;
+    margin-bottom:15px;
+}
+
+th,td{
+    border:1px solid #ccc;
+    padding:8px;
+    text-align:center;
+}
+
+input{
+    width:90%;
+    padding:4px;
+}
+
+button{
+    padding:8px 15px;
+    margin:5px;
+    cursor:pointer;
+}
+
+#result{
+    background:#f5f5f5;
+    padding:15px;
+    border-radius:10px;
+    margin-top:20px;
+    line-height:1.8;
+}
+
+.score{
+    font-weight:bold;
+    color:#0066cc;
+}
+
+</style>
+</head>
+<body>
+
+<h1>気象データ解析システム</h1>
+
+<h2>観測データ入力</h2>
+
+<table>
+<thead>
+<tr>
+<th>No.</th>
+<th>雨量(mm)</th>
+<th>風速(m/s)</th>
+<th>温度(℃)</th>
+<th>湿度(%)</th>
+<th>削除</th>
+</tr>
+</thead>
+
+<tbody id="weatherBody">
+
+<tr>
+<td>1</td>
+<td><input class="rain" type="number"></td>
+<td><input class="wind" type="number"></td>
+<td><input class="temp" type="number"></td>
+<td><input class="hum" type="number"></td>
+
+<td>
+<button onclick="deleteRow(this)">
+削除
+</button>
+</td>
+</tr>
+
+</tbody>
+</table>
+
+<button onclick="addDataRow()">
+データ行追加
+</button>
+
+<button onclick="clearData()">
+全データ削除
+</button>
+
+<button onclick="calculate()">
+計算実行
+</button>
+
+<div id="result">
+結果がここに表示されます
+</div>
+
+<script>
+
+function clearData(){
+
+    if(!confirm("入力データをすべて削除しますか？")){
+        return;
+    }
+
+    const body =
+    document.getElementById("weatherBody");
+
+    body.innerHTML = `
+    <tr>
+        <td>1</td>
+
+        <td>
+            <input class="rain" type="number">
+        </td>
+
+        <td>
+            <input class="wind" type="number">
+        </td>
+
+        <td>
+            <input class="temp" type="number">
+        </td>
+
+        <td>
+            <input class="hum" type="number">
+        </td>
+
+        <td>
+            <button onclick="deleteRow(this)">
+            削除
+            </button>
+        </td>
+    </tr>
+    `;
+
+    document.getElementById("result").innerHTML =
+    "結果がここに表示されます";
+}
+
+function addDataRow(){
+
+    const body=
+    document.getElementById("weatherBody");
+
+    const rowNumber=
+    body.rows.length+1;
+
+    const row=
+    document.createElement("tr");
+
+    row.innerHTML=`
+    <td>${rowNumber}</td>
+
+    <td>
+      <input class="rain" type="number">
+    </td>
+
+    <td>
+      <input class="wind" type="number">
+    </td>
+
+    <td>
+      <input class="temp" type="number">
+    </td>
+
+    <td>
+      <input class="hum" type="number">
+    </td>
+
+    <td>
+      <button onclick="deleteRow(this)">
+      削除
+      </button>
+    </td>
+    `;
+
+    body.appendChild(row);
+}
+
+function avg(arr){
+    return arr.reduce((a,b)=>a+b,0)/arr.length;
+}
+
+function tempScore(t){
+
+    if(t >= 20 && t <= 24) return 10;
+
+    if((t >= 18 && t < 20) ||
+       (t > 24 && t <= 26)) return 9;
+
+    if((t >= 16 && t < 18) ||
+       (t > 26 && t <= 28)) return 8;
+
+    if((t >= 14 && t < 16) ||
+       (t > 28 && t <= 30)) return 7;
+
+    if((t >= 12 && t < 14) ||
+       (t > 30 && t <= 32)) return 6;
+
+    if((t >= 10 && t < 12) ||
+       (t > 32 && t <= 34)) return 5;
+
+    if((t >= 8 && t < 10) ||
+       (t > 34 && t <= 36)) return 4;
+
+    if((t >= 6 && t < 8) ||
+       (t > 36 && t <= 38)) return 3;
+
+    if((t >= 4 && t < 6) ||
+       (t > 38 && t <= 40)) return 2;
+
+    return 1;
+}
+
+function rainScore(r){
+
+    if(r === 0) return 10;
+    if(r <= 2) return 9;
+    if(r <= 5) return 8;
+    if(r <= 10) return 7;
+    if(r <= 20) return 6;
+    if(r <= 30) return 5;
+    if(r <= 50) return 4;
+    if(r <= 70) return 3;
+    if(r <= 100) return 2;
+
+    return 1;
+}
+
+function windScore(w){
+
+    if(w >= 2 && w <= 4) return 10;
+
+    if((w >= 1 && w < 2) ||
+       (w > 4 && w <= 5)) return 9;
+
+    if((w >= 0.5 && w < 1) ||
+       (w > 5 && w <= 6)) return 8;
+
+    if(w > 6 && w <= 8) return 6;
+
+    if(w > 8 && w <= 10) return 4;
+
+    if(w > 10 && w <= 15) return 2;
+
+    return 1;
+}
+
+function humScore(h){
+
+    if(h >= 40 && h <= 60) return 10;
+
+    if((h >= 35 && h < 40) ||
+       (h > 60 && h <= 65)) return 9;
+
+    if((h >= 30 && h < 35) ||
+       (h > 65 && h <= 70)) return 8;
+
+    if((h >= 25 && h < 30) ||
+       (h > 70 && h <= 75)) return 7;
+
+    if((h >= 20 && h < 25) ||
+       (h > 75 && h <= 80)) return 6;
+
+    if((h >= 15 && h < 20) ||
+       (h > 80 && h <= 85)) return 5;
+
+    if((h >= 10 && h < 15) ||
+       (h > 85 && h <= 90)) return 4;
+
+    if(h > 90) return 2;
+
+    return 1;
+}
+
+function updateRowNumbers(){
+
+    const rows =
+    document.querySelectorAll("#weatherBody tr");
+
+    rows.forEach((row,index)=>{
+        row.cells[0].textContent = index + 1;
+    });
+
+}
+
+
+function deleteRow(button){
+
+    const rows=
+    document.querySelectorAll(
+    "#weatherBody tr"
+    );
+
+    if(rows.length===1){
+
+        alert(
+        "最低1行は必要です。"
+        );
+
+        return;
+    }
+
+    button
+    .parentElement
+    .parentElement
+    .remove();
+
+    updateRowNumbers();
+
+}
+
+function calculate(){
+
+    const rain=
+    [...document.querySelectorAll(".rain")]
+    .map(x=>Number(x.value))
+    .filter(x=>!isNaN(x));
+
+    const wind=
+    [...document.querySelectorAll(".wind")]
+    .map(x=>Number(x.value))
+    .filter(x=>!isNaN(x));
+
+    const temp=
+    [...document.querySelectorAll(".temp")]
+    .map(x=>Number(x.value))
+    .filter(x=>!isNaN(x));
+
+    const hum=
+    [...document.querySelectorAll(".hum")]
+    .map(x=>Number(x.value))
+    .filter(x=>!isNaN(x));
+
+    if(
+        rain.length===0 ||
+        wind.length===0 ||
+        temp.length===0 ||
+        hum.length===0
+    ){
+        document.getElementById("result").innerHTML=
+        "データを入力してください";
+        return;
+    }
+
+    const avgTemp=avg(temp);
+    const maxTemp=Math.max(...temp);
+    const minTemp=Math.min(...temp);
+    const rangeTemp=maxTemp-minTemp;
+
+    const avgHum=avg(hum);
+
+    const totalRain=
+    rain.reduce((a,b)=>a+b,0);
+
+    const maxWind=
+    Math.max(...wind);
+
+    const scoreTemp=
+    tempScore(avgTemp);
+
+    const scoreRain=
+    rainScore(totalRain);
+
+    const scoreWind=
+    windScore(maxWind);
+
+    const scoreHum=
+    humScore(avgHum);
+
+const totalScore =
+    scoreTemp +
+    scoreRain +
+    scoreWind +
+    scoreHum;
+
+let rank;
+
+if(totalScore >= 36){
+    rank = "S";
+}
+else if(totalScore >= 28){
+    rank = "A";
+}
+else if(totalScore >= 20){
+    rank = "B";
+}
+else if(totalScore >= 12){
+    rank = "C";
+}
+else{
+    rank = "D";
+}
+
+    document.getElementById("result").innerHTML=
+    `
+    <h2>解析結果</h2>
+
+    平均気温：${avgTemp.toFixed(1)} ℃<br>
+    最高気温：${maxTemp.toFixed(1)} ℃<br>
+    最低気温：${minTemp.toFixed(1)} ℃<br>
+    日較差：${rangeTemp.toFixed(1)} ℃<br><br>
+
+    平均湿度：${avgHum.toFixed(1)} %<br>
+    総降水量：${totalRain.toFixed(1)} mm<br>
+    最大風速：${maxWind.toFixed(1)} m/s<br><br>
+
+    <span class="score">
+    温度得点：${scoreTemp}/10
+    </span><br>
+
+    <span class="score">
+    降水得点：${scoreRain}/10
+    </span><br>
+
+    <span class="score">
+    風速得点：${scoreWind}/10
+    </span><br>
+
+    <span class="score">
+    湿度得点：${scoreHum}/10
+    </span><br><br>
+
+<h2>
+総合指数：${totalScore}/40
+</h2>
+
+<h2>
+快適度ランク：${rank}
+</h2>
+
+<hr>
+
+<div style="
+font-size:12px;
+color:#666;
+margin-top:10px;
+">
+
+<b>快適評価基準</b><br>
+
+気温：20～24℃<br>
+湿度：40～60％<br>
+風速：2～4m/s<br>
+雨量：0mm<br><br>
+
+※一般的に快適とされる条件を
+40点満点として評価しています。
+
+</div>
+
+    `;
+}
+
+</script>
+
+</body>
+</html>
+
+けんきゅうけっか
+10cm  38,47,66,99,119,187,97,22,249,252,356,382,374,556,458,94,342,721,47,82,111,164
+30cm  12,54,58,114,133,66,73,138,73,77,69,104,165,123,112,86,247,364,209,82,60,60
+50cm  83,70,58,81,139,100,156, 60,72,99,87,72,72,69,112,70,64,70,43
